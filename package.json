@@ -1,0 +1,19 @@
+{
+  "name": "californium",
+  "main": "./lib/californium",
+  "version": "0.0.0",
+  "description": "A short description of your package",
+  "activationCommands": {
+    "atom-text-editor": [
+      "californium:convert",
+      "californium:startListening"
+    ]
+  },
+  "repository": "https://github.com/atom/californium",
+  "license": "MIT",
+  "engines": {
+    "atom": ">=0.174.0 <2.0.0"
+  },
+  "dependencies": {
+  }
+}
