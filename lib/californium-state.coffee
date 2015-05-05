@@ -26,6 +26,7 @@ class EditorObserver
       @listening = false
     else
       @input += char
+      console.log(@input)
     # stop keypress event
     event.preventDefault()
 

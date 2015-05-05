@@ -1,5 +1,4 @@
 utils = require './utils'
-
 {Disposable, CompositeDisposable, Point, Range} = require 'atom'
 
 disposables = new CompositeDisposable()
@@ -15,32 +14,60 @@ class ActionHandler
     @func = FUNCS[func]
     if @func.regexStr is not null
       @argRegex = new RegExp(@func.regexStr)
-    funcResult = this[@func.funcName].apply(this)
+    funcResult = this[@func.funcName].apply(this, @func.args)
+    if funcResult is null
+      return
     @editor.setSelectedBufferRange(funcResult)
-    console.log(funcResult)
 
-  searchUntil: () ->
+  searchAhead: (back) ->
     start = @start
     count = 0
     end = null
     while count < @num
-      result = @scanForwardsThroughRegex start
+      result = @scanForwardsThroughRegex start @argRegex
       if result is null
         break
-      console.log('end', result)
       end = result.range.end
+      lastLength = result.matchText.length
       start = end
       count++
     if end is null
-      null
-    end = utils.moveBackwards @editor, end, result.matchText.length
+      return null
+    if back is true
+      end = utils.moveBackwards @editor, end, lastLength
     new Range(@start, end)
 
+   searchBehind: (back) ->
+    start = @start
+    count = 0
+    end = null
+    while count < @num
+      result = @scanBackwardsThroughRegex start @argRegex
+      if result is null
+        break
+      end = result.range.start
+      lastLength = result.matchText.length
+      start = end
+      count++
+    if end is null
+      return null
+    if back
+      end = utils.moveForwards @editor, end, lastLength
+    new Range(@start, end)
 
-  scanForwardsThroughRegex: (startPos) ->
+  scanForwardsThroughRegex: (startPos, regex) ->
     eof = utils.getLastPos(@editor)
     result = null
-    @editor.scanInBufferRange @argRegex, [startPos, eof], (hit) ->
+    @editor.scanInBufferRange regex, [startPos, eof], (hit) ->
+      hit.stop()
+      if hit.matchText != ''
+        result = hit
+    result
+
+  scanBackwardsThroughRegex: (startPos, regex) ->
+    startOfFile = [0, 0]
+    result = null
+    @editor.backwardsScanInBufferRange regex, [startPos, startOfFile], (hit) ->
       hit.stop()
       if hit.matchText != ''
         result = hit
@@ -48,15 +75,30 @@ class ActionHandler
 
 FUNCS =
   'f':
-    'funcName': 'searchUntil'
+    'funcName': 'searchAhead'
     'regexStr': null
     'num': null
     'type': 'motion'
-  # 'F':
-  #   'func': ActionHandler.searchThrough
-  #   'regexStr': null
-  #   'num': null
-  #   'type': 'motion'
+    'args': [false]
+  'F':
+    'funcName': 'searchBehind'
+    'regexStr': null
+    'num': null
+    'type': 'motion'
+    'args': [false]
+  't':
+    'funcName': 'searchAhead'
+    'regexStr': null
+    'num': null
+    'type': 'motion'
+    'args': [true]
+  'T':
+    'funcName': 'searchBehind'
+    'regexStr': null
+    'num': null
+    'type': 'motion'
+    'args': [true]
+
 
 module.exports = {
     ActionHandler
