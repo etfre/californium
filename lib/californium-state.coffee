@@ -20,8 +20,9 @@ class EditorObserver
     if @input != '' and char == '$' and @input.slice(-1) == '$'
       [num, action, func, arg] = @input.split '-'
       @input = ''
-      func = func.slice(0, -1)
-      actions.do_action num, action, func
+      arg = arg.slice(0, -1)
+      handler = new actions.ActionHandler(@editor, num, action, arg)
+      handler.doFunction(func)
       @listening = false
     else
       @input += char
@@ -42,7 +43,6 @@ class ObserverHandler
         obs = o
         obs.listening = true
         break
-    console.log(obs)
     if not obs
       obs = new EditorObserver()
       @observers.push obs

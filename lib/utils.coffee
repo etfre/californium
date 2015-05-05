@@ -1,4 +1,4 @@
-{Disposable, CompositeDisposable} = require 'atom'
+{Disposable, CompositeDisposable, Point} = require 'atom'
 
 disposables = new CompositeDisposable()
 
@@ -69,6 +69,41 @@ CHARS =
   121: 'y'
   122: 'z'
 
+getLastPos = (editor) ->
+  lastRow = editor.getLastBufferRow()
+  lastCol = editor.lineTextForBufferRow(lastRow).length
+  new Point(lastRow, lastCol)
+
+moveForwards = (editor, startPoint, totalCount) ->
+  count = 0
+  lastPos = getLastPos(editor)
+  [row, col] = startPoint.toArray()
+  lineLength = editor.lineTextForBufferRow(row).length
+  while count < totalCount and lastPos.isGreaterThan([x, y])
+    if col >= lineLength
+      row++
+      col = 0
+      lineLength = editor.lineTextForBufferRow(row).length
+    else
+      col++
+    count++
+  new Point(row, col)
+
+moveBackwards = (editor, startPoint, totalCount) ->
+  count = 0
+  [row, col] = startPoint.toArray()
+  while count < totalCount and Math.max(row, col) > 0
+    if col == 0
+      row--
+      col = editor.lineTextForBufferRow(row).length
+    else
+      col--
+    count++
+  new Point(row, col)
+
 module.exports = {
     CHARS
+    getLastPos
+    moveForwards
+    moveBackwards
 }

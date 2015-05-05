@@ -5,7 +5,7 @@
   "description": "A short description of your package",
   "activationCommands": {
     "atom-text-editor": [
-      "californium:convert",
+      "californium:test",
       "californium:startListening"
     ]
   },

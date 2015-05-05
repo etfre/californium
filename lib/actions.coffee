@@ -1,19 +1,63 @@
-{Disposable, CompositeDisposable} = require 'atom'
+utils = require './utils'
+
+{Disposable, CompositeDisposable, Point, Range} = require 'atom'
 
 disposables = new CompositeDisposable()
 
-do_action = (num, action, func, arg) ->
-  console.log('num', num)
-  console.log('action', action)
-  console.log('func', func)
-  console.log('func', arg)
+class ActionHandler
 
-searchForwardsUntilRegex = (regex, cursor) ->
+  constructor: (@editor, num, action, arg) ->
+    @num = parseInt(num)
+    @argRegex = new RegExp(arg)
+    @start = @editor.getCursorBufferPosition()
+
+  doFunction: (func) ->
+    @func = FUNCS[func]
+    if @func.regexStr is not null
+      @argRegex = new RegExp(@func.regexStr)
+    funcResult = this[@func.funcName].apply(this)
+    @editor.setSelectedBufferRange(funcResult)
+    console.log(funcResult)
+
+  searchUntil: () ->
+    start = @start
+    count = 0
+    end = null
+    while count < @num
+      result = @scanForwardsThroughRegex start
+      if result is null
+        break
+      console.log('end', result)
+      end = result.range.end
+      start = end
+      count++
+    if end is null
+      null
+    end = utils.moveBackwards @editor, end, result.matchText.length
+    new Range(@start, end)
 
 
-FUNCTIONS =
-  'f': searchForwardsUntilRegex
+  scanForwardsThroughRegex: (startPos) ->
+    eof = utils.getLastPos(@editor)
+    result = null
+    @editor.scanInBufferRange @argRegex, [startPos, eof], (hit) ->
+      hit.stop()
+      if hit.matchText != ''
+        result = hit
+    result
+
+FUNCS =
+  'f':
+    'funcName': 'searchUntil'
+    'regexStr': null
+    'num': null
+    'type': 'motion'
+  # 'F':
+  #   'func': ActionHandler.searchThrough
+  #   'regexStr': null
+  #   'num': null
+  #   'type': 'motion'
 
 module.exports = {
-    do_action
+    ActionHandler
 }

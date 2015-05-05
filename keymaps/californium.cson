@@ -1,2 +1,3 @@
 'atom-workspace':
     'ctrl-alt-8': 'californium:startListening'
+    'ctrl-alt-1': 'californium:test'
