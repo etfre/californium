@@ -9,6 +9,7 @@ class ActionHandler
     @num = parseInt(num)
     @argRegex = new RegExp(arg)
     @start = @editor.getCursorBufferPosition()
+    @lastPos = utils.getLastPos(@editor).toArray()
 
   doFunction: (func) ->
     @func = FUNCS[func]
@@ -55,10 +56,18 @@ class ActionHandler
       end = utils.moveForwards @editor, end, lastLength
     new Range(@start, end)
 
-  scanForwardsThroughRegex: (startPos, regex) ->
+  modifyLine: () ->
+    startArray = @start.toArray()
+    startArray[1] = 0
+    count = 0
+    endRow = Math.min(@start.toArray()[0] + @num - 1, @lastPos[0])
+    endCol = @editor.lineTextForBufferRow(endRow).length
+    return new Range(startArray, [endRow, endCol])
+
+  scanForwardsThroughRegex: (startPos, regex) =>
     eof = utils.getLastPos(@editor)
     result = null
-    @editor.scanInBufferRange regex, [startPos, eof], (hit) ->
+    @editor.scanInBufferRange regex, [startPos, @lastPos], (hit) =>
       hit.stop()
       if hit.matchText != ''
         result = hit
@@ -67,7 +76,7 @@ class ActionHandler
   scanBackwardsThroughRegex: (startPos, regex) ->
     startOfFile = [0, 0]
     result = null
-    @editor.backwardsScanInBufferRange regex, [startPos, startOfFile], (hit) ->
+    @editor.backwardsScanInBufferRange regex, [startPos, startOfFile], (hit) =>
       hit.stop()
       if hit.matchText != ''
         result = hit
@@ -98,6 +107,13 @@ FUNCS =
     'num': null
     'type': 'motion'
     'args': [true]
+  'l':
+    'funcName': 'modifyLine'
+    'regexStr': '\\n'
+    'num': null
+    'type': 'motion'
+    'args': []
+
 
 
 module.exports = {
