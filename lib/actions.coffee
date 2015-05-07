@@ -7,7 +7,7 @@ class ActionHandler
 
   constructor: (@editor, num, action, arg) ->
     @num = parseInt(num)
-    @argRegex = new RegExp(arg)
+    @arg = arg
     @start = @editor.getCursorBufferPosition()
     @lastPos = utils.getLastPos(@editor).toArray()
 
@@ -15,6 +15,12 @@ class ActionHandler
     @func = FUNCS[func]
     if @func.regexStr is not null
       @argRegex = new RegExp(@func.regexStr)
+    else
+      if @func.type == 'surroundObject'
+        @argRegex = new RegExp('\\' + @arg[0] + '|\\' + @arg[1]) 
+        console.log(@argRegex)
+      else
+        @argRegex = new RegExp(@arg)
     funcResult = this[@func.funcName].apply(this, @func.args)
     if funcResult is null
       return
@@ -63,6 +69,39 @@ class ActionHandler
     endRow = Math.min(@start.toArray()[0] + @num - 1, @lastPos[0])
     endCol = @editor.lineTextForBufferRow(endRow).length
     return new Range(startArray, [endRow, endCol])
+
+  getSurroundRange: () ->
+    start = @start
+    end = @start
+    pos1 = null
+    pos2 = null
+    oppoCharCount = 0
+    while pos1 is null
+      result = @scanBackwardsThroughRegex start, @argRegex
+      if result is null
+        return null
+      start = result.range.start
+      if result.matchText == @arg[1]
+        oppoCharCount++
+      else
+        if oppoCharCount > 0 
+          oppoCharCount--
+        else
+          pos1 = result.range.start 
+    oppoCharCount = 0
+    while pos2 is null
+      result = @scanForwardsThroughRegex end, @argRegex
+      if result is null
+        return null
+      end = result.range.end
+      if result.matchText == @arg[0]
+        oppoCharCount++
+      else
+        if oppoCharCount > 0 
+          oppoCharCount--
+        else
+          pos2 = result.range.end
+    return new Range(pos1, pos2)
 
   scanForwardsThroughRegex: (startPos, regex) =>
     eof = utils.getLastPos(@editor)
@@ -113,8 +152,12 @@ FUNCS =
     'num': null
     'type': 'motion'
     'args': []
-
-
+  'y':
+    'funcName': 'getSurroundRange'
+    'regexStr': null
+    'num': null
+    'type': 'surroundObject'
+    'args': []
 
 module.exports = {
     ActionHandler

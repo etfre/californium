@@ -5,6 +5,8 @@ disposables = new CompositeDisposable()
 CHARS =
   32: 'space'
   36: '$'
+  40: '('
+  41: ')'
   45: '-'
   48: '0'
   49: '1'
