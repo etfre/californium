@@ -7,6 +7,7 @@ class ActionHandler
 
   constructor: (@editor, num, action, arg) ->
     @num = parseInt(num)
+    @action = action
     @arg = arg
     @start = @editor.getCursorBufferPosition()
     @lastPos = utils.getLastPos(@editor).toArray()
@@ -24,14 +25,15 @@ class ActionHandler
     funcResult = this[@func.funcName].apply(this, @func.args)
     if funcResult is null
       return
-    @editor.setSelectedBufferRange(funcResult)
+    doAction(funcResult, @action, @editor, @func.type)
+    #@editor.setSelectedBufferRange(funcResult)
 
   searchAhead: (back) ->
     start = @start
     count = 0
     end = null
     while count < @num
-      result = @scanForwardsThroughRegex start @argRegex
+      result = @scanForwardsThroughRegex [start, @lastPos], @argRegex
       if result is null
         break
       end = result.range.end
@@ -49,7 +51,7 @@ class ActionHandler
     count = 0
     end = null
     while count < @num
-      result = @scanBackwardsThroughRegex start @argRegex
+      result = @scanBackwardsThroughRegex [start, [0, 0]], @argRegex
       if result is null
         break
       end = result.range.start
@@ -63,12 +65,25 @@ class ActionHandler
     new Range(@start, end)
 
   modifyLine: () ->
-    startArray = @start.toArray()
-    startArray[1] = 0
+    start = @start
+    start.end = 0
     count = 0
-    endRow = Math.min(@start.toArray()[0] + @num - 1, @lastPos[0])
+    endRow = Math.min(start.start + @num - 1, @lastPos[0])
     endCol = @editor.lineTextForBufferRow(endRow).length
-    return new Range(startArray, [endRow, endCol])
+    return new Range(start, [endRow, endCol])
+
+  modifyTextObject: (outer) ->
+    start = @start.toArray()
+    start[1] = 0
+    end = [start[0], @editor.lineTextForBufferRow(start[0]).length]
+    console.log(start, end)
+    behind = @scanBackwardsThroughRegex [@start, start], "'"
+    ahead = @scanForwardsThroughRegex [@start, end], "'"
+    console.log(behind)
+    console.log(ahead)
+    if behind is not null and ahead is not null
+      return new Range(behind, ahead)
+    
 
   getSurroundRange: () ->
     start = @start
@@ -77,7 +92,7 @@ class ActionHandler
     pos2 = null
     oppoCharCount = 0
     while pos1 is null
-      result = @scanBackwardsThroughRegex start, @argRegex
+      result = @scanBackwardsThroughRegex [start, [0, 0]], @argRegex
       if result is null
         return null
       start = result.range.start
@@ -90,7 +105,7 @@ class ActionHandler
           pos1 = result.range.start 
     oppoCharCount = 0
     while pos2 is null
-      result = @scanForwardsThroughRegex end, @argRegex
+      result = @scanForwardsThroughRegex [end, @lastPos], @argRegex
       if result is null
         return null
       end = result.range.end
@@ -103,19 +118,17 @@ class ActionHandler
           pos2 = result.range.end
     return new Range(pos1, pos2)
 
-  scanForwardsThroughRegex: (startPos, regex) =>
-    eof = utils.getLastPos(@editor)
+  scanForwardsThroughRegex: (searchRange, regex) =>
     result = null
-    @editor.scanInBufferRange regex, [startPos, @lastPos], (hit) =>
+    @editor.scanInBufferRange regex, searchRange, (hit) =>
       hit.stop()
       if hit.matchText != ''
         result = hit
     result
 
-  scanBackwardsThroughRegex: (startPos, regex) ->
-    startOfFile = [0, 0]
+  scanBackwardsThroughRegex: (searchRange, regex) ->
     result = null
-    @editor.backwardsScanInBufferRange regex, [startPos, startOfFile], (hit) =>
+    @editor.backwardsScanInBufferRange regex, searchRange, (hit) =>
       hit.stop()
       if hit.matchText != ''
         result = hit
@@ -152,12 +165,38 @@ FUNCS =
     'num': null
     'type': 'motion'
     'args': []
-  'y':
+  's':
     'funcName': 'getSurroundRange'
     'regexStr': null
     'num': null
     'type': 'surroundObject'
     'args': []
+  'i':
+    'funcName': 'modifyTextObject'
+    'regexStr': null
+    'num': null
+    'type': 'textObject'
+    'args': [false]
+  'a':
+    'funcName': 'modifyTextObject'
+    'regexStr': null
+    'num': null
+    'type': 'textObject'
+    'args': [true]
+
+doAction = (range, action, editor, type) ->
+  if action == 'm'
+    if type == 'motion'
+      console.log(range.end)
+      editor.setCursorBufferPosition(range.end)
+  else if action == 'd'
+    editor.setTextInBufferRange range, ''
+  else if action == 's'
+    editor.setSelectedBufferRange(range)
+  else if action == 'p'
+    editor.setTextInBufferRange range, atom.clipboard.read()
+  else 
+    atom.clipboard.write(range.toString())
 
 module.exports = {
     ActionHandler
