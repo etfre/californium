@@ -19,16 +19,16 @@ class ActionHandler
     else
       if @func.type == 'surroundObject'
         @argRegex = new RegExp('\\' + @arg[0] + '|\\' + @arg[1]) 
-        console.log(@argRegex)
       else
         @argRegex = new RegExp(@arg)
     funcResult = this[@func.funcName].apply(this, @func.args)
-    if funcResult is null
+    console.log(funcResult)
+    if funcResult == null
       return
     doAction(funcResult, @action, @editor, @func.type)
     #@editor.setSelectedBufferRange(funcResult)
 
-  searchAhead: (back) ->
+  searchAhead: (back, start=@start) ->
     start = @start
     count = 0
     end = null
@@ -46,7 +46,7 @@ class ActionHandler
       end = utils.moveBackwards @editor, end, lastLength
     new Range(@start, end)
 
-   searchBehind: (back) ->
+   searchBehind: (back, start=@start) ->
     start = @start
     count = 0
     end = null
@@ -65,25 +65,28 @@ class ActionHandler
     new Range(@start, end)
 
   modifyLine: () ->
-    start = @start
-    start.end = 0
+    start = @start.toArray()
+    start[1] = 0
     count = 0
-    endRow = Math.min(start.start + @num - 1, @lastPos[0])
+    endRow = Math.min(start[0] + @num - 1, @lastPos[0])
     endCol = @editor.lineTextForBufferRow(endRow).length
     return new Range(start, [endRow, endCol])
 
   modifyTextObject: (outer) ->
     start = @start.toArray()
+    end = @start.toArray()
     start[1] = 0
-    end = [start[0], @editor.lineTextForBufferRow(start[0]).length]
-    console.log(start, end)
-    behind = @scanBackwardsThroughRegex [@start, start], "'"
-    ahead = @scanForwardsThroughRegex [@start, end], "'"
-    console.log(behind)
-    console.log(ahead)
-    if behind is not null and ahead is not null
+    end[1] = @editor.lineTextForBufferRow(end[0]).length
+    if outer
+      behind = @scanBackwardsThroughRegex([@start, start], @argRegex).range.end
+      ahead = @scanForwardsThroughRegex([@start, end], @argRegex).range.start
+    else
+      behind = @scanBackwardsThroughRegex([@start, start], @argRegex).range.end
+      ahead = @scanForwardsThroughRegex([@start, end], @argRegex).range.start
+    if behind != null and ahead != null
       return new Range(behind, ahead)
-    
+    else if behind != null
+      return 
 
   getSurroundRange: () ->
     start = @start
@@ -187,7 +190,6 @@ FUNCS =
 doAction = (range, action, editor, type) ->
   if action == 'm'
     if type == 'motion'
-      console.log(range.end)
       editor.setCursorBufferPosition(range.end)
   else if action == 'd'
     editor.setTextInBufferRange range, ''

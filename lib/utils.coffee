@@ -92,7 +92,7 @@ CHARS =
   120: 'x'
   121: 'y'
   122: 'z'
-
+ 
 getLastPos = (editor) ->
   lastRow = editor.getLastBufferRow()
   lastCol = editor.lineTextForBufferRow(lastRow).length
