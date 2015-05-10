@@ -28,41 +28,41 @@ class ActionHandler
     doAction(funcResult, @action, @editor, @func.type)
     #@editor.setSelectedBufferRange(funcResult)
 
-  searchAhead: (back, start=@start) ->
-    start = @start
+  searchAhead: (back, start=@start, lastPos=@lastPos, num=@num) ->
+    lastPos = start
     count = 0
     end = null
-    while count < @num
+    while count < num
       result = @scanForwardsThroughRegex [start, @lastPos], @argRegex
-      if result is null
+      if result == null
         break
       end = result.range.end
       lastLength = result.matchText.length
       start = end
       count++
-    if end is null
+    if end == null
       return null
     if back is true
       end = utils.moveBackwards @editor, end, lastLength
-    new Range(@start, end)
+    new Range(lastPos, end)
 
-   searchBehind: (back, start=@start) ->
-    start = @start
+   searchBehind: (back, start=@start,  lastPos=@lastPos, num=@num) ->
+    lastPos = start
     count = 0
     end = null
-    while count < @num
+    while count < num
       result = @scanBackwardsThroughRegex [start, [0, 0]], @argRegex
-      if result is null
+      if result == null
         break
       end = result.range.start
       lastLength = result.matchText.length
       start = end
       count++
-    if end is null
+    if end == null
       return null
     if back
       end = utils.moveForwards @editor, end, lastLength
-    new Range(@start, end)
+    new Range(lastPos, end)
 
   modifyLine: () ->
     start = @start.toArray()
@@ -77,16 +77,27 @@ class ActionHandler
     end = @start.toArray()
     start[1] = 0
     end[1] = @editor.lineTextForBufferRow(end[0]).length
-    if outer
-      behind = @scanBackwardsThroughRegex([@start, start], @argRegex).range.end
-      ahead = @scanForwardsThroughRegex([@start, end], @argRegex).range.start
-    else
-      behind = @scanBackwardsThroughRegex([@start, start], @argRegex).range.end
-      ahead = @scanForwardsThroughRegex([@start, end], @argRegex).range.start
+    behind = @scanBackwardsThroughRegex([@start, start], @argRegex)
+    if behind != null
+      if outer
+        behind = behind.range.start
+      else
+        behind = behind.range.end
+    ahead = @scanForwardsThroughRegex([@start, end], @argRegex)
+    if ahead != null
+      if outer
+        ahead = ahead.range.end
+      else
+        ahead = ahead.range.start
     if behind != null and ahead != null
-      return new Range(behind, ahead)
+      return new Range(behind, ahead, end)
+    else if ahead != null
+      console.log(behind, end)
+      return @searchBehind(!outer, behind, end)
     else if behind != null
-      return 
+      return @searchAhead(!outer, ahead, end)
+    else
+      return null
 
   getSurroundRange: () ->
     start = @start
@@ -94,9 +105,9 @@ class ActionHandler
     pos1 = null
     pos2 = null
     oppoCharCount = 0
-    while pos1 is null
+    while pos1 == null
       result = @scanBackwardsThroughRegex [start, [0, 0]], @argRegex
-      if result is null
+      if result == null
         return null
       start = result.range.start
       if result.matchText == @arg[1]
@@ -107,9 +118,9 @@ class ActionHandler
         else
           pos1 = result.range.start 
     oppoCharCount = 0
-    while pos2 is null
+    while pos2 == null
       result = @scanForwardsThroughRegex [end, @lastPos], @argRegex
-      if result is null
+      if result == null
         return null
       end = result.range.end
       if result.matchText == @arg[0]
