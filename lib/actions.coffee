@@ -18,15 +18,14 @@ class ActionHandler
       @argRegex = new RegExp(@func.regexStr)
     else
       if @func.type == 'surroundObject'
-        @argRegex = new RegExp('\\' + @arg[0] + '|\\' + @arg[1]) 
+        @argRegex = new RegExp('\\' + @arg[0] + '|\\' + @arg[1])
       else
-        @argRegex = new RegExp(@arg)
+        esc = utils.escapeRegexStr(@arg)
+        @argRegex = new RegExp(esc)
     funcResult = this[@func.funcName].apply(this, @func.args)
     if funcResult == null
       return
-    console.log(funcResult)
     doAction(funcResult, @action, @editor, @func.type)
-    #@editor.setSelectedBufferRange(funcResult)
 
   searchAhead: (back, start=@start, lastPos=@lastPos, num=@num) ->
     count = 0
@@ -41,7 +40,6 @@ class ActionHandler
     if end == start
       return null
     if back is true
-      console.log('hello')
       end = utils.moveBackwards @editor, end, lastLength
     return new Range(start, end)
 
@@ -113,10 +111,10 @@ class ActionHandler
       if result.matchText == @arg[1]
         oppoCharCount++
       else
-        if oppoCharCount > 0 
+        if oppoCharCount > 0
           oppoCharCount--
         else
-          pos1 = result.range.start 
+          pos1 = result.range.start
     oppoCharCount = 0
     while pos2 == null
       result = @scanForwardsThroughRegex [end, @lastPos], @argRegex
@@ -126,7 +124,7 @@ class ActionHandler
       if result.matchText == @arg[0]
         oppoCharCount++
       else
-        if oppoCharCount > 0 
+        if oppoCharCount > 0
           oppoCharCount--
         else
           pos2 = result.range.end
@@ -215,7 +213,7 @@ doAction = (range, action, editor, type) ->
     editor.setSelectedBufferRange(range)
   else if action == 'p'
     editor.setTextInBufferRange range, atom.clipboard.read()
-  else 
+  else
     atom.clipboard.write(range.toString())
 
 module.exports = {

@@ -66,6 +66,9 @@ CHARS =
   88: 'X'
   89: 'Y'
   90: 'Z'
+  91: '['
+  92: '\\'
+  93: ']'
   94: '^'
   95: '_'
   96: '`'
@@ -95,7 +98,11 @@ CHARS =
   120: 'x'
   121: 'y'
   122: 'z'
- 
+  123: '{'
+  124: '|'
+  125: '}'
+  126: '~'
+
 getLastPos = (editor) ->
   lastRow = editor.getLastBufferRow()
   lastCol = editor.lineTextForBufferRow(lastRow).length
@@ -128,10 +135,14 @@ moveBackwards = (editor, startPoint, totalCount) ->
     count++
   new Point(row, col)
 
+escapeRegexStr = (str) ->
+  return str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&")
+
 module.exports = {
     CHARS
     REGEX_PATTERNS
     getLastPos
     moveForwards
     moveBackwards
+    escapeRegexStr
 }

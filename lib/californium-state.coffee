@@ -4,21 +4,20 @@ actions = require './actions'
 
 class EditorObserver
 
-  constructor: ->
+  constructor: (@editor) ->
     @subscriptions = new CompositeDisposable
     @listening = true
     @input = ''
-    @editor = atom.workspace.getActiveTextEditor()
     @editorView = atom.views.getView @editor
     @editorView.addEventListener 'keypress', (event) =>
        @handleInput(event)
+
 
   handleInput: (event) ->
     if not @listening
       return
     char = utils.CHARS[event.which]
     if @input != '' and char == '^' and @input.slice(-1) == '`'
-      console.log('dfgdfgdfg')
       [num, action, func, arg] = @input.split '-'
       @input = ''
       arg = arg.slice(0, -1)
@@ -27,7 +26,6 @@ class EditorObserver
       @listening = false
     else
       @input += char
-      console.log(@input)
     # stop keypress event
     event.preventDefault()
 
@@ -36,7 +34,6 @@ class ObserverHandler
   constructor: ->
     @observers = []
 
-#TODO fix memory leak with @observers and editor deletion
   startListening: ->
     current_editor = atom.workspace.getActiveTextEditor()
     obs = null
@@ -46,7 +43,10 @@ class ObserverHandler
         obs.listening = true
         break
     if not obs
-      obs = new EditorObserver()
+      obs = new EditorObserver(current_editor)
+      current_editor.onDidDestroy =>
+        i = @observers.indexOf(current_editor)
+        @observers.splice(i, 1)
       @observers.push obs
 
 module.exports = ObserverHandler
