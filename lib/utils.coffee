@@ -66,6 +66,9 @@ CHARS =
   88: 'X'
   89: 'Y'
   90: 'Z'
+  94: '^'
+  95: '_'
+  96: '`'
   97: 'a'
   98: 'b'
   99: 'c'
@@ -103,7 +106,7 @@ moveForwards = (editor, startPoint, totalCount) ->
   lastPos = getLastPos(editor)
   [row, col] = startPoint.toArray()
   lineLength = editor.lineTextForBufferRow(row).length
-  while count < totalCount and lastPos.isGreaterThan([x, y])
+  while count < totalCount and lastPos.isGreaterThan([row, col])
     if col >= lineLength
       row++
       col = 0

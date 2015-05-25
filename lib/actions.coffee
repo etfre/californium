@@ -22,36 +22,35 @@ class ActionHandler
       else
         @argRegex = new RegExp(@arg)
     funcResult = this[@func.funcName].apply(this, @func.args)
-    console.log(funcResult)
     if funcResult == null
       return
+    console.log(funcResult)
     doAction(funcResult, @action, @editor, @func.type)
     #@editor.setSelectedBufferRange(funcResult)
 
   searchAhead: (back, start=@start, lastPos=@lastPos, num=@num) ->
-    lastPos = start
     count = 0
-    end = null
+    end = start
     while count < num
-      result = @scanForwardsThroughRegex [start, @lastPos], @argRegex
+      result = @scanForwardsThroughRegex [end, lastPos], @argRegex
       if result == null
         break
       end = result.range.end
       lastLength = result.matchText.length
-      start = end
       count++
-    if end == null
+    if end == start
       return null
     if back is true
+      console.log('hello')
       end = utils.moveBackwards @editor, end, lastLength
-    new Range(lastPos, end)
+    return new Range(start, end)
 
    searchBehind: (back, start=@start,  lastPos=@lastPos, num=@num) ->
     lastPos = start
     count = 0
     end = null
     while count < num
-      result = @scanBackwardsThroughRegex [start, [0, 0]], @argRegex
+      result = @scanBackwardsThroughRegex [start, lastPos], @argRegex
       if result == null
         break
       end = result.range.start
@@ -60,7 +59,7 @@ class ActionHandler
       count++
     if end == null
       return null
-    if back
+    if back is true
       end = utils.moveForwards @editor, end, lastLength
     new Range(lastPos, end)
 
@@ -78,24 +77,25 @@ class ActionHandler
     start[1] = 0
     end[1] = @editor.lineTextForBufferRow(end[0]).length
     behind = @scanBackwardsThroughRegex([@start, start], @argRegex)
-    if behind != null
-      if outer
-        behind = behind.range.start
-      else
-        behind = behind.range.end
     ahead = @scanForwardsThroughRegex([@start, end], @argRegex)
-    if ahead != null
+    if ahead != null and behind != null
       if outer
-        ahead = ahead.range.end
+        return new Range(behind.range.start, ahead.range.end)
       else
-        ahead = ahead.range.start
-    if behind != null and ahead != null
-      return new Range(behind, ahead, end)
+        return new Range(behind.range.end, ahead.range.start)
     else if ahead != null
-      console.log(behind, end)
-      return @searchBehind(!outer, behind, end)
+      range = @searchAhead(!outer, ahead.range.end, end)
+      if !outer
+        startPoint = utils.moveForwards(@editor, range.start, ahead.matchText.length)
+        return new Range(startPoint, range.end)
+      startPoint = utils.moveBackwards(@editor, range.start, ahead.matchText.length)
+      return new Range(startPoint, range.end)
     else if behind != null
-      return @searchAhead(!outer, ahead, end)
+      if outer
+        behind = behind.range.end
+      else
+        behind = behind.range.start
+      return @searchBehind(!outer, behind, end)
     else
       return null
 
@@ -197,6 +197,13 @@ FUNCS =
     'num': null
     'type': 'textObject'
     'args': [true]
+  '':
+    'funcName': 'modifyTextObject'
+    'regexStr': null
+    'num': null
+    'type': 'textObject'
+    'args': [true]
+
 
 doAction = (range, action, editor, type) ->
   if action == 'm'

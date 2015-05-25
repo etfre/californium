@@ -17,7 +17,8 @@ class EditorObserver
     if not @listening
       return
     char = utils.CHARS[event.which]
-    if @input != '' and char == '$' and @input.slice(-1) == '$'
+    if @input != '' and char == '^' and @input.slice(-1) == '`'
+      console.log('dfgdfgdfg')
       [num, action, func, arg] = @input.split '-'
       @input = ''
       arg = arg.slice(0, -1)
