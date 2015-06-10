@@ -40,7 +40,7 @@ class ActionHandler
     if end == start
       return null
     if back is true
-      end = utils.moveBackwards @editor, end, lastLength
+      end = utils.moveBackwards end, lastLength
     return new Range(start, end)
 
    searchBehind: (back, start=@start,  lastPos=@lastPos, num=@num) ->
@@ -58,7 +58,7 @@ class ActionHandler
     if end == null
       return null
     if back is true
-      end = utils.moveForwards @editor, end, lastLength
+      end = utils.moveForwards end, lastLength
     new Range(lastPos, end)
 
   modifyLine: () ->
@@ -84,9 +84,9 @@ class ActionHandler
     else if ahead != null
       range = @searchAhead(!outer, ahead.range.end, end)
       if !outer
-        startPoint = utils.moveForwards(@editor, range.start, ahead.matchText.length)
+        startPoint = utils.moveForwards(range.start, ahead.matchText.length)
         return new Range(startPoint, range.end)
-      startPoint = utils.moveBackwards(@editor, range.start, ahead.matchText.length)
+      startPoint = utils.moveBackwards(range.start, ahead.matchText.length)
       return new Range(startPoint, range.end)
     else if behind != null
       if outer
@@ -98,6 +98,7 @@ class ActionHandler
       return null
 
   getSurroundRange: () ->
+    console.log(@arg)
     start = @start
     end = @start
     pos1 = null
@@ -128,6 +129,9 @@ class ActionHandler
           oppoCharCount--
         else
           pos2 = result.range.end
+    if null not in [pos1, pos2] and @arg.length == 3
+      @arg = @arg[0] + @arg[1]
+      return new Range(utils.moveForwards(start, 1), utils.moveBackwards(end, 1))
     return new Range(pos1, pos2)
 
   scanForwardsThroughRegex: (searchRange, regex) =>
@@ -204,17 +208,17 @@ FUNCS =
 
 
 doAction = (range, action, editor, type) ->
+  if action in ['y', 'c']
+    atom.clipboard.write(range.toString())
   if action == 'm'
     if type == 'motion'
       editor.setCursorBufferPosition(range.end)
-  else if action == 'd'
+  else if action in ['d', 'c']
     editor.setTextInBufferRange range, ''
   else if action == 's'
     editor.setSelectedBufferRange(range)
   else if action == 'p'
     editor.setTextInBufferRange range, atom.clipboard.read()
-  else
-    atom.clipboard.write(range.toString())
 
 module.exports = {
     ActionHandler

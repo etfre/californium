@@ -108,22 +108,24 @@ getLastPos = (editor) ->
   lastCol = editor.lineTextForBufferRow(lastRow).length
   new Point(lastRow, lastCol)
 
-moveForwards = (editor, startPoint, totalCount) ->
+moveForwards = (startPoint, totalCount) ->
+  editor = atom.workspace.getActiveTextEditor()
   count = 0
   lastPos = getLastPos(editor)
   [row, col] = startPoint.toArray()
   lineLength = editor.lineTextForBufferRow(row).length
-  while count < totalCount and lastPos.isGreaterThan([row, col])
+  console.log(count < totalCount, lastPos.isGreaterThan([row, col]))
+  while count < totalCount #and lastPos.isGreaterThan([row, col])
+    col++
     if col >= lineLength
       row++
       col = 0
       lineLength = editor.lineTextForBufferRow(row).length
-    else
-      col++
     count++
   new Point(row, col)
 
-moveBackwards = (editor, startPoint, totalCount) ->
+moveBackwards = (startPoint, totalCount) ->
+  editor = atom.workspace.getActiveTextEditor()
   count = 0
   [row, col] = startPoint.toArray()
   while count < totalCount and Math.max(row, col) > 0

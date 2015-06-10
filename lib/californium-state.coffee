@@ -12,7 +12,6 @@ class EditorObserver
     @editorView.addEventListener 'keypress', (event) =>
        @handleInput(event)
 
-
   handleInput: (event) ->
     if not @listening
       return
@@ -20,13 +19,14 @@ class EditorObserver
     if @input != '' and char == '^' and @input.slice(-1) == '`'
       [num, action, func, arg] = @input.split '-'
       @input = ''
+      @listening = false
       arg = arg.slice(0, -1)
       handler = new actions.ActionHandler(@editor, num, action, arg)
       handler.doFunction(func)
-      @listening = false
     else
       @input += char
     # stop keypress event
+    console.log(@input)
     event.preventDefault()
 
 class ObserverHandler
